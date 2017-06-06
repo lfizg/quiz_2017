@@ -192,35 +192,35 @@ exports.check = function (req, res, next) {
 exports.randomplay = function (req, res, next) {
 
     if(req.session.randomplay){
-        if(req.session.randomplay.resolved){
-            var used = req.session.randomplay.resolved.length ? req.session.randomplay.resolved:[-1];
+        if(req.session.randomplay.answered){
+            var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
         } else {
             var aux = []
-            req.session.randomplay.resolved=aux;
+            req.session.randomplay.answered=aux;
         }
     } else {
         var auxplay={};
         req.session.randomplay=auxplay;
         var aux = []
-        req.session.randomplay.resolved=aux;
+        req.session.randomplay.answered=aux;
 
     }
 
-    var used = req.session.randomplay.resolved.length ? req.session.randomplay.resolved:[-1];
-    var whereopt = {'id': {$notIn: used}};
+    var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
+    var whereopt = {'id': {$notIn: answered}};
     models.Quiz.count()
         .then(function (count) {
-            if(count===used.length){
-                var score = req.session.randomplay.resolved.length;
-                req.session.randomplay.resolved=[];
+            if(count===answered.length){
+                var score = req.session.randomplay.answered.length;
+                req.session.randomplay.answered=[];
                 res.render('quizzes/random_none', {score:score});
                 next();
             }
-            var max = count - req.session.randomplay.resolved.length-1;
-            var aleatorio = Math.round(Math.random()*max);
+            var max = count - req.session.randomplay.answered.length-1;
+            var randomno = Math.round(Math.random()*max);
             var findOptions = {
                 where: whereopt,
-                offset: aleatorio,
+                offset: randomno,
                 limit: 1
             };
             return models.Quiz.findAll(findOptions);
@@ -229,7 +229,7 @@ exports.randomplay = function (req, res, next) {
 
             res.render('quizzes/random_play', {
                 quiz: quiz[0],
-                score: req.session.randomplay.resolved.length
+                score: req.session.randomplay.answered.length
             });
         })
         .catch(function (error) {
