@@ -222,3 +222,86 @@ exports.check = function (req, res, next) {
         answer: answer
     });
 };
+
+// GET /quizzes/randomplay
+exports.randomplay = function (req, res, next) {
+
+    if(req.session.randomplay){
+
+        if(req.session.randomplay.answered){
+
+            var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
+
+        } else {
+
+            var aux = []
+            req.session.randomplay.answered=aux;
+        }
+    } else {
+
+        var auxplay={};
+        req.session.randomplay=auxplay;
+        var aux = []
+        req.session.randomplay.answered=aux;
+
+    }
+
+    var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
+
+    models.Quiz.count()
+        .then(function (count) {
+
+            if(count===answered.length){
+
+                var score = req.session.randomplay.answered.length;
+                req.session.randomplay.answered=[];
+                res.render('quizzes/random_none', {score:score});
+                next();
+            }
+
+            var randomno = Math.round(Math.random()*(count - req.session.randomplay.answered.length-1));
+
+            return models.Quiz.findAll({
+                where: {'id': {$notIn: answered}},
+                offset: randomno,
+                limit: 1
+            });
+        })
+        .then(function (quizzes) {
+
+            res.render('quizzes/random_play', {
+                quiz: quizzes[0],
+                score: req.session.randomplay.answered.length
+            });
+        })
+        .catch(function (error) {
+            console.log("Error", error);
+            next(error);
+        });
+
+};
+
+
+
+// GET /quizzes/:quizId/randomcheck
+exports.randomcheck = function (req, res, next) {
+
+    var answer = req.query.answer || "";
+
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+
+    if(result){
+        req.session.randomplay.answered.push(parseInt(req.quiz.id));
+
+    } else{
+        req.session.randomplay.answered = [];
+    }
+
+    res.render('quizzes/random_result', {
+        quiz: req.quiz,
+        result: result,
+        answer: answer,
+        score: req.question.randomplay.answered.length
+    });
+
+};
