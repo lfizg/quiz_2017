@@ -136,7 +136,7 @@ router.put('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)/accept',
     quizController.adminOrAuthorRequired,
     tipController.accept);
 router.delete('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)',
-    sessionController.loginRequired,
+    sessionController.loginRequired, quizController.adminOrAuthorRequired,
     tipController.destroy);
 
 //Definicion de rutas del juego aleatorio

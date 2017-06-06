@@ -8,7 +8,7 @@ exports.load = function (req, res, next, quizId) {
 
     models.Quiz.findById(quizId, {
         include: [
-            models.Tip,
+            {model: models.Tip, include: [{model: models.User, as : 'Author'}]},
             {model: models.User, as: 'Author'}
         ]
     })
@@ -264,7 +264,11 @@ exports.randomplay = function (req, res, next) {
             return models.Quiz.findAll({
                 where: {'id': {$notIn: answered}},
                 offset: randomno,
-                limit: 1
+                limit: 1,
+                include: [
+                    {model: models.Tip, include: [{model: models.User, as : 'Author'}]},
+                    {model: models.User, as: 'Author'}
+                ]
             });
         })
         .then(function (quizzes) {
@@ -285,23 +289,34 @@ exports.randomplay = function (req, res, next) {
 
 // GET /quizzes/:quizId/randomcheck
 exports.randomcheck = function (req, res, next) {
+    if(req.session.randomplay){
+        if(!req.session.randomplay.answered){
+            var aux = []
+            req.session.randomplay.answered=aux;
+        }
+    } else {
+        var auxplay={};
+        req.session.randomplay=auxplay;
+        var aux = []
+        req.session.randomplay.answered=aux;
+
+    }
 
     var answer = req.query.answer || "";
-
-    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();//Si el usuario acierta -> true
 
     if(result){
         req.session.randomplay.answered.push(parseInt(req.quiz.id));
-
-    } else{
-        req.session.randomplay.answered = [];
+    } else {
+        req.session.randomplay.answered=[];
     }
 
+
     res.render('quizzes/random_result', {
-        quiz: req.quiz,
-        result: result,
+        score: req.session.randomplay.answered.length,
+        quizId: req.quiz.id,
         answer: answer,
-        score: req.question.randomplay.answered.length
+        result: result
     });
 
 };
