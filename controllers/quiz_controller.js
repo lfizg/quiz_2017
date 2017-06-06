@@ -191,41 +191,50 @@ exports.check = function (req, res, next) {
 // GET /quizzes/randomplay
 exports.randomplay = function (req, res, next) {
 
-    var randomno;
-    if (!req.session.randomplay.answered) req.session.randomplay.answered = [-1];
-    var answered = req.session.randomplay.answered;
+    if(req.session.randomplay){
+        if(req.session.randomplay.resolved){
+            var used = req.session.randomplay.resolved.length ? req.session.randomplay.resolved:[-1];
+        } else {
+            var aux = []
+            req.session.randomplay.resolved=aux;
+        }
+    } else {
+        var auxplay={};
+        req.session.randomplay=auxplay;
+        var aux = []
+        req.session.randomplay.resolved=aux;
 
+    }
+
+    var used = req.session.randomplay.resolved.length ? req.session.randomplay.resolved:[-1];
+    var whereopt = {'id': {$notIn: used}};
     models.Quiz.count()
-        .then (function (count) {
-
-            if (answered.length == count) {
-                var puntuacion = req.session.randomplay.answered.length;
-                req.session.randomplay.answered = [];
-                res.render('quizzes/random_none', {
-                    score: puntuacion
-                });
+        .then(function (count) {
+            if(count===used.length){
+                var score = req.session.randomplay.resolved.length;
+                req.session.randomplay.resolved=[];
+                res.render('quizzes/random_none', {score:score});
                 next();
             }
-
-            randomno = Math.round((Math.random()*(count -answered.length -1)));
-            var whereoptions = {
-                where: {'id': {$notIn: answered }},
-                offset: randomno,
+            var max = count - req.session.randomplay.resolved.length-1;
+            var aleatorio = Math.round(Math.random()*max);
+            var findOptions = {
+                where: whereopt,
+                offset: aleatorio,
                 limit: 1
             };
-            return models.Quiz.findAll(whereoptions)
-                .then(function (quizzes) {
-                    res.render('/quizzes/random_play', {
-                        score: answered.length,
-                        quiz: quizzes[0]
-                    });
-
-                })
-
+            return models.Quiz.findAll(findOptions);
         })
-            .catch(function (error) {
-                console.log("Error:", error);
+        .then(function (quiz) {
+
+            res.render('quizzes/random_play', {
+                quiz: quiz[0],
+                score: req.session.randomplay.resolved.length
             });
+        })
+        .catch(function (error) {
+            next(error);
+        });
 
 };
 
@@ -236,7 +245,7 @@ exports.randomcheck = function (req, res, next) {
 
     var answer = req.query.answer || "";
 
-    var result = answer.tolowercase().trim() === req.quiz.answer.tolowercase().trim();
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
 
     if(result){
         req.session.randomplay.answered.push(parseInt(req.quiz.id));
