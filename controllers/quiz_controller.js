@@ -192,13 +192,18 @@ exports.check = function (req, res, next) {
 exports.randomplay = function (req, res, next) {
 
     if(req.session.randomplay){
+
         if(req.session.randomplay.answered){
+
             var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
+
         } else {
+
             var aux = []
             req.session.randomplay.answered=aux;
         }
     } else {
+
         var auxplay={};
         req.session.randomplay=auxplay;
         var aux = []
@@ -207,32 +212,35 @@ exports.randomplay = function (req, res, next) {
     }
 
     var answered = req.session.randomplay.answered.length ? req.session.randomplay.answered:[-1];
-    var whereopt = {'id': {$notIn: answered}};
+
     models.Quiz.count()
         .then(function (count) {
+
             if(count===answered.length){
+
                 var score = req.session.randomplay.answered.length;
                 req.session.randomplay.answered=[];
                 res.render('quizzes/random_none', {score:score});
                 next();
             }
-            var max = count - req.session.randomplay.answered.length-1;
-            var randomno = Math.round(Math.random()*max);
-            var findOptions = {
-                where: whereopt,
+
+            var randomno = Math.round(Math.random()*(count - req.session.randomplay.answered.length-1));
+
+            return models.Quiz.findAll({
+                where: {'id': {$notIn: answered}},
                 offset: randomno,
                 limit: 1
-            };
-            return models.Quiz.findAll(findOptions);
-        })
-        .then(function (quiz) {
+            });
+        })git
+        .then(function (quizzes) {
 
             res.render('quizzes/random_play', {
-                quiz: quiz[0],
+                quiz: quizzes[0],
                 score: req.session.randomplay.answered.length
             });
         })
         .catch(function (error) {
+            console.log("Error", error);
             next(error);
         });
 
