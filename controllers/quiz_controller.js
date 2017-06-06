@@ -231,7 +231,7 @@ exports.randomplay = function (req, res, next) {
                 offset: randomno,
                 limit: 1
             });
-        })git
+        })
         .then(function (quizzes) {
 
             res.render('quizzes/random_play', {
