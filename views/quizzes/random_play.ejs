@@ -3,7 +3,7 @@
 </h1>
 
 <div>
-    Preguntas acertadas = <span id="score"><%= score %></span>
+    Su puntuación es: <span id="score"><%= score %></span>
 </div>
 
 <form method="get" action="/quizzes/randomcheck/<%= quiz.id %>">
@@ -11,6 +11,8 @@
     <p>
         Pregunta: <b><%= quiz.question %></b>
     </p>
+
+    <p id="recordatorio"> Recuerde poner las tildes.</p>
 
 
     <div class="wideRow">
