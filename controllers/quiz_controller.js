@@ -187,3 +187,69 @@ exports.check = function (req, res, next) {
         answer: answer
     });
 };
+
+// GET /quizzes/randomplay
+exports.randomplay = function (req, res, next) {
+
+    var randomno;
+    if (!req.session.randomplay.answered) req.session.randomplay.answered = [-1];
+    var answered = req.session.randomplay.answered;
+
+    models.Quiz.count()
+        .then (function (count) {
+
+            if (answered.length == count) {
+                var puntuacion = req.session.randomplay.answered.length;
+                req.session.randomplay.answered = [];
+                res.render('quizzes/random_none', {
+                    score: puntuacion
+                });
+                next();
+            }
+
+            randomno = Math.round((Math.random()*(count -answered.length -1)));
+            var whereoptions = {
+                where: {'id': {$notIn: answered }},
+                offset: randomno,
+                limit: 1
+            };
+            return models.Quiz.findAll(whereoptions)
+                .then(function (quizzes) {
+                    res.render('/quizzes/random_play', {
+                        score: answered.length,
+                        quiz: quizzes[0]
+                    });
+
+                })
+
+        })
+            .catch(function (error) {
+                console.log("Error:", error);
+            });
+
+};
+
+
+
+// GET /quizzes/:quizId/randomcheck
+exports.randomcheck = function (req, res, next) {
+
+    var answer = req.query.answer || "";
+
+    var result = answer.tolowercase().trim() === req.quiz.answer.tolowercase().trim();
+
+    if(result){
+        req.session.randomplay.answered.push(parseInt(req.quiz.id));
+
+    } else{
+        req.session.randomplay.answered = [];
+    }
+
+    res.render('quizzes/random_result', {
+        quiz: req.quiz,
+        result: result,
+        answer: answer,
+        score: req.question.randomplay.answered.length
+    });
+
+};
